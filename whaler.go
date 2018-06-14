@@ -126,9 +126,13 @@ func CreateContainer(config CreateContainerConfig) (string, error) {
 		NetworkDisabled: false,
 		ExposedPorts:    nat.PortSet{},
 	}
-	net, ex := FindNetworkByName(config.NetworkName)
-	if ex != nil {
-		return "", err
+	net := &Network{}
+	if config.NetworkName != "" {
+		var ex error
+		net, ex = FindNetworkByName(config.NetworkName)
+		if ex != nil {
+			return "", err
+		}
 	}
 
 	if config.Volumes == nil {
