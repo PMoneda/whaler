@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -219,7 +220,15 @@ func StartContainer(id string) error {
 
 //Publish image to registry
 func Publish(image, username, password string) (string, error) {
-	encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", username, password)))
+	auth := types.AuthConfig{
+		Username: username,
+		Password: password,
+	}
+	encodedJSON, err := json.Marshal(auth)
+	if err != nil {
+		return "", err
+	}
+	encoded := base64.StdEncoding.EncodeToString(encodedJSON)
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return "", err
