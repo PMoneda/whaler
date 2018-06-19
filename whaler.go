@@ -215,3 +215,23 @@ func StartContainer(id string) error {
 	return cli.ContainerStart(context.Background(), id, types.ContainerStartOptions{})
 
 }
+
+//Publish image to registry
+func Publish(image string) (string, error) {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return "", err
+	}
+
+	out, err := cli.ImagePush(context.Background(), image, types.ImagePushOptions{
+		All: true,
+	})
+	if err != nil {
+		return "", err
+	}
+	if b, err := ioutil.ReadAll(out); err != nil {
+		return "", err
+	} else {
+		return string(b), nil
+	}
+}
