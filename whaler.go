@@ -3,6 +3,7 @@ package whaler
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -217,14 +218,16 @@ func StartContainer(id string) error {
 }
 
 //Publish image to registry
-func Publish(image string) (string, error) {
+func Publish(image, username, password string) (string, error) {
+	encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", username, password)))
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return "", err
 	}
 
 	out, err := cli.ImagePush(context.Background(), image, types.ImagePushOptions{
-		All: true,
+		All:          true,
+		RegistryAuth: encoded,
 	})
 	if err != nil {
 		return "", err
