@@ -8,7 +8,7 @@ import (
 
 func main() {
 	conf := whaler.BuildImageConfig{
-		Tag: "company/app:0.0.1",
+		Tag: "localhost:5000/company/app:0.0.1",
 	}
 	str, err := whaler.BuildImageWithDockerfile(conf)
 
@@ -18,8 +18,14 @@ func main() {
 	} else {
 		fmt.Println(str)
 	}
+	if out, err := whaler.Publish(conf.Tag, "docker", "docker"); err != nil {
+		fmt.Println(out)
+		fmt.Println(err)
+	} else {
+		fmt.Println(out)
+	}
 	id, err := whaler.CreateContainer(whaler.CreateContainerConfig{
-		Image: "company/app:0.0.1",
+		Image: "localhost:5000/company/app:0.0.1",
 		Name:  "my-container",
 	})
 	if err != nil {
