@@ -1,14 +1,8 @@
 package whaler
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -28,18 +22,6 @@ type Container struct {
 	Ports   []string
 }
 
-//Image is a basic representation of a docker image
-type Image struct {
-	ID   string
-	Name string
-}
-
-//Network is a basic representation of a docker network
-type Network struct {
-	Name string
-	ID   string
-}
-
 //CreateContainerConfig is a basic configuration structure to create a docker container
 type CreateContainerConfig struct {
 	Name        string
@@ -48,13 +30,6 @@ type CreateContainerConfig struct {
 	Env         []string
 	Ports       []string
 	NetworkName string
-}
-
-//BuildImageConfig is a basic configuration to build an image
-type BuildImageConfig struct {
-	PathContext string
-	Dockerfile  string
-	Tag         string
 }
 
 //GetContainers from docker
@@ -67,50 +42,40 @@ func GetContainers() ([]Container, error) {
 	if err != nil {
 		return nil, err
 	}
-	_containers := make([]Container, 0, 0)
+	_containers := make([]Container, len(containers))
+	i := 0
 	for _, container := range containers {
-		_containers = append(_containers, Container{ID: container.ID, Name: container.Names[0], Image: container.Image})
+		_containers[i] = Container{ID: container.ID, Name: container.Names[0], Image: container.Image}
+		i++
 	}
 	return _containers, nil
 }
 
-//BuildImageWithDockerfile builds an image using a specific dockerfile
-func BuildImageWithDockerfile(config BuildImageConfig) (string, error) {
-	buf := bytes.NewBuffer(nil)
-	if config.PathContext == "" {
-		if wd, err := os.Getwd(); err != nil {
-			return "", err
-		} else {
-			config.PathContext = wd
+//FindContainerByIdentifier finds container by id or name
+func FindContainerByIdentifier(identifier string) (Container, error) {
+	containers, err := GetContainers()
+	if err != nil {
+		return Container{}, err
+	}
+	for _, c := range containers {
+		if c.Name == identifier || c.ID == identifier {
+			return c, nil
 		}
 	}
-	err := compress(config.PathContext, buf)
-	if err != nil {
-		return "", err
-	}
-	if config.Dockerfile == "" {
-		config.Dockerfile = "Dockerfile"
-	}
-
-	return buildDockerImage(config.Dockerfile, config.Tag, buf)
+	return Container{}, fmt.Errorf("container with identifer(name or id) %s not found", identifier)
 }
 
-func buildDockerImage(dockerfile, tag string, ctx io.Reader) (string, error) {
+//RemoveContainer by Id the container links and volumes will be removed too
+func RemoveContainer(id string, force bool) error {
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		return "", err
+		return err
 	}
-	resp, err := cli.ImageBuild(context.Background(), ctx, types.ImageBuildOptions{
-		Dockerfile:  dockerfile,
-		Tags:        []string{tag},
-		NetworkMode: "bridge",
-		NoCache:     true,
+	return cli.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{
+		Force:         force,
+		RemoveLinks:   true,
+		RemoveVolumes: true,
 	})
-	if err != nil {
-		return "", err
-	}
-	b, _ := ioutil.ReadAll(resp.Body)
-	return string(b), nil
 }
 
 //CreateContainer creates a new container on Docker
@@ -174,40 +139,6 @@ func CreateContainer(config CreateContainerConfig) (string, error) {
 	return resp.ID, nil
 }
 
-//FindNetworkByName look for a docker network with specific name
-func FindNetworkByName(name string) (*Network, error) {
-	networks, err := GetNetworks()
-	if err != nil {
-		return nil, err
-	}
-	for _, net := range networks {
-		if net.Name == name {
-			return &net, nil
-		}
-	}
-	return nil, fmt.Errorf("network %s not found", name)
-}
-
-//GetNetworks from docker
-func GetNetworks() ([]Network, error) {
-	nets := make([]Network, 0)
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return nil, err
-	}
-	networks, err := cli.NetworkList(context.Background(), types.NetworkListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	for _, net := range networks {
-		nets = append(nets, Network{
-			Name: net.Name,
-			ID:   net.ID,
-		})
-	}
-	return nets, nil
-}
-
 //StartContainer starts container by id
 func StartContainer(id string) error {
 	cli, err := client.NewEnvClient()
@@ -216,34 +147,4 @@ func StartContainer(id string) error {
 	}
 	return cli.ContainerStart(context.Background(), id, types.ContainerStartOptions{})
 
-}
-
-//Publish image to registry
-func Publish(image, username, password string) (string, error) {
-	auth := types.AuthConfig{
-		Username: username,
-		Password: password,
-	}
-	encodedJSON, err := json.Marshal(auth)
-	if err != nil {
-		return "", err
-	}
-	encoded := base64.StdEncoding.EncodeToString(encodedJSON)
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return "", err
-	}
-
-	out, err := cli.ImagePush(context.Background(), image, types.ImagePushOptions{
-		All:          true,
-		RegistryAuth: encoded,
-	})
-	if err != nil {
-		return "", err
-	}
-	if b, err := ioutil.ReadAll(out); err != nil {
-		return "", err
-	} else {
-		return string(b), nil
-	}
 }
