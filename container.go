@@ -74,9 +74,7 @@ func RemoveContainer(id string, force bool) error {
 		return err
 	}
 	return cli.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{
-		Force:         force,
-		RemoveLinks:   true,
-		RemoveVolumes: true,
+		Force: force,
 	})
 }
 
