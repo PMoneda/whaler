@@ -54,8 +54,8 @@ func GetContainers(all bool) ([]Container, error) {
 }
 
 //FindContainerByIdentifier finds container by id or name
-func FindContainerByIdentifier(identifier string) (Container, error) {
-	containers, err := GetContainers()
+func FindContainerByIdentifier(identifier string, all bool) (Container, error) {
+	containers, err := GetContainers(all)
 	if err != nil {
 		return Container{}, err
 	}
