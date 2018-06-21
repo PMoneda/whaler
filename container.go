@@ -33,12 +33,14 @@ type CreateContainerConfig struct {
 }
 
 //GetContainers from docker
-func GetContainers() ([]Container, error) {
+func GetContainers(all bool) ([]Container, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
 	}
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{
+		All: all,
+	})
 	if err != nil {
 		return nil, err
 	}
