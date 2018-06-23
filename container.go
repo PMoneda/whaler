@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -76,6 +77,19 @@ func RemoveContainer(id string, force bool) error {
 	return cli.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{
 		Force: force,
 	})
+}
+
+//RestartContainer by Id or Name
+func RestartContainer(identifier string, timeout *time.Duration) error {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+	if contaienr, err := FindContainerByIdentifier(identifier, false); err != nil {
+		return err
+	} else {
+		return cli.ContainerRestart(context.Background(), contaienr.ID, timeout)
+	}
 }
 
 //CreateContainer creates a new container on Docker
