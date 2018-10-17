@@ -15,8 +15,13 @@ import (
 
 //Image is a basic representation of a docker image
 type Image struct {
-	ID   string
-	Name string
+	ID     string
+	Name   string
+	Labels map[string]string
+	Tags   []string
+}
+
+type ImageConfig struct {
 }
 
 //BuildImageConfig is a basic configuration to build an image
@@ -93,4 +98,27 @@ func Publish(image, username, password string) (string, error) {
 	} else {
 		return string(b), nil
 	}
+}
+
+func ListImages() ([]Image, error) {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return nil, err
+	}
+	list, err := cli.ImageList(context.Background(), types.ImageListOptions{
+		All: true,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	result := make([]Image, len(list))
+	for i, image := range list {
+		result[i] = Image{
+			ID:     image.ID,
+			Labels: image.Labels,
+			Tags:   image.RepoTags,
+		}
+	}
+	return result, nil
 }
