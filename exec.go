@@ -9,7 +9,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func RunCommand(containerID, command string) (*bufio.Reader, error) {
+func RunCommand(containerID string, commands ...string) (*bufio.Reader, error) {
 	client, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func RunCommand(containerID, command string) (*bufio.Reader, error) {
 		AttachStderr: true,
 		Detach:       false,
 		Tty:          false,
-		Cmd:          []string{command},
+		Cmd:          commands,
 	})
 	if err != nil {
 		return nil, err
