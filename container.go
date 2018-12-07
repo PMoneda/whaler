@@ -162,3 +162,12 @@ func StartContainer(id string) error {
 	return cli.ContainerStart(context.Background(), id, types.ContainerStartOptions{})
 
 }
+
+//StopContainer stops container by id
+func StopContainer(id string, timeout *time.Duration) error {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+	return cli.ContainerStop(context.Background(), id, timeout)
+}
